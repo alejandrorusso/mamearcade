@@ -5,7 +5,7 @@ the amazing [MAME project](https://www.mamedev.org/) -- responsible to emulate
 most of the hardware found in old-school arcade machines -- and I wanted an
 embedded system that *just runs that*.
 
-![MAME Appliance Project](./mame.jpeg)
+![MAME Appliance Project](https://github.com/alejandrorusso/mamearcade/mame.jpeg)
 
 # Status-quo
 Looking around, I found great platforms like
