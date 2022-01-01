@@ -150,11 +150,11 @@ The modifications include
   `After=mame-question.service`), and
 - launching MAME only under the existence of the file `/tmp/arcademode-confirm`
 (see line `ConditionPathExists=/tmp/arcademode-confirm`) -- recall that such
-file will exists only if **there were no joysticks' inputs**!.
+file will exist only if **there were no joysticks' inputs**!.
 
 So, if there were no joysticks' inputs, then MAME will execute by calling
 `/home/pi/scripts/autostart.sh`. Otherwise, all the services declared as
-conflicting above will be successfully launched and will allow users to login
+conflicting above will be successfully launched, which will allow users to login
 into the system as in `servicemode`.
 
 ## 2. Button to mute / unmute sound
@@ -169,14 +169,14 @@ want to play, however, can just unmute and enjoy the arcade from time to time.
 The goal is that if you keep pressing the button for some seconds (no more than
 5), you will hear that the volume change to a minimum. Then, if you keep
 pressing the button again for some seconds, the arcade will mute. Finally, if
-you keep pressing the button again for some time, you will see that the arcade
-unmute and has a high volume.
+you keep pressing the button again, you will see that the arcade unmute and has
+a high volume.
 
 The hardware that you need is simply a *push switch* -- I followed most of the
 idea from [this post](http://razzpisampler.oreilly.com/ch07.html). You need to
 connect two cables into the push switch: one into the GPIO 4 (look for pin 4 in
 your board) and another into ground (look for GND in your board). You can change
-the GPIO 4 for whatever GPIO that you have available on the board.
+the GPIO 4 for whatever GPIO available on the board.
 
 We start by writing [an script to change the volume when detecting every five
 seconds that the button has been
@@ -279,4 +279,5 @@ explore further with MAP.
   has been changed, and you need to do the patching manually. So, `mame-updater.sh`
   needs to be changed and a new patch file needs to be created for MAME 0238.
   What about 0239?
-- So many other ideas
+- How do we make that modifications of scripts automatically are deployed? I am
+  planning making many MAPs :)
