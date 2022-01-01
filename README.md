@@ -26,8 +26,8 @@ utilize X11.
 
 # Extensions
 
-After studying the project for some time. I introduced some modifications to fit
-my needs.
+After studying the project for some time. I introduced three modifications to
+fit my needs.
 
 ## 1. No need to decide between arcademode and servicemode
 
@@ -228,3 +228,55 @@ done
 
 We also write [a systemd service to launch this script only when being in
 `arcademode`](https://github.com/alejandrorusso/mamearcade/blob/main/map/etc/systemd/system/mame-volume.service).
+
+```
+[Unit]
+Description=Controlling volume for MAME with a button
+After=mame-question.service
+ConditionPathExists=/tmp/arcademode-confirm
+
+[Service]
+User=pi
+Group=pi
+ExecStart=/bin/bash /home/pi/scripts/mame-vol.sh
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Observe that the script is run only if no joysticks' inputs are detected (see
+`After=mame-question.service` and
+`ConditionPathExists=/tmp/arcademode-confirm`).
+
+## 3. Showing IP in login screen
+
+Sometimes it is useful to know the IP of your MAP when entering into
+`servicemode`. So, it is enough to modify [the file `/etc/issue`](https://github.com/alejandrorusso/mamearcade/blob/main/map/etc/issue):
+
+```
+Raspbian GNU/Linux 10 \n \l
+
+S E R V I C E      M O D E
+
+IP: \4{eth0}
+```
+
+# TODOs
+
+Here I write some possible extensions and or aspects that I would like to
+explore further with MAP.
+
+- So far, the joysticks' input come from `/dev/input/js0`, but why not
+  generalize this to consider any joystick in the system?
+- It is not clear when exactly at boot time the script is waiting for the
+  joysticks input. At this point, when you see the MAME splash screen, you
+  should start moving the joystick or pressing a button. While this works, it
+  would be nice to play some sound to indicate exactly when the input is
+  expected.
+- Make sure that when in `arcademode`, all network is down -- this is not the case
+  right now. For instance, we have `wpa_supplicant` service up.
+- The patch does not work for MAME 0238. The lines where the patch is applied
+  has been changed, and you need to do the patching manually. So, `mame-updater.sh`
+  needs to be changed and a new patch file needs to be created for MAME 0238.
+  What about 0239?
+- So many other ideas
