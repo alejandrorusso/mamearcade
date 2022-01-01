@@ -22,7 +22,9 @@ that addresses this problem. It takes the Debian-based [Raspbian
 OS](https://www.raspbian.org/) and sets it up in a way that you can have your
 Raspberry Pi up to date with the latest version of MAME. The project is also set
 up to be minimalist in the amount of resources that it uses, e.g., it does not
-utilize X11.
+utilize X11. [The project provides a 12 GB SD card image with the latest MAME
+version up and
+running.](https://drive.google.com/file/d/1wWmISI-pM46O7oA_PoIv4cBAcOfE54RL/view?usp=sharing)
 
 # Extensions
 
