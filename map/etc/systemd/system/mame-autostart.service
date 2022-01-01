@@ -1,0 +1,22 @@
+[Unit]
+Description=MAME Appliance Autostart service
+After=mame-question.service 
+ConditionPathExists=/tmp/arcademode-confirm
+Conflicts=getty@tty1.service smbd.service nmbd.service rng-tools.service cron.service mame-artwork-mgmt.service
+
+[Service]
+User=pi
+Group=pi
+PAMName=login
+Type=simple
+EnvironmentFile=/etc/environment
+ExecStart=/home/pi/scripts/autostart.sh
+Restart=on-abort
+RestartSec=5
+TTYPath=/dev/tty1
+StandardInput=tty
+    
+[Install]
+WantedBy=multi-user.target
+Also=shutdown.service
+

@@ -1,0 +1,9 @@
+[Unit]
+Description=Reading input from joystick
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /home/pi/scripts/mame-joystick-detect.sh 
+
+[Install]
+WantedBy=multi-user.target 

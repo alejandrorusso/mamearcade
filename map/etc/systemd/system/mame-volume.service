@@ -1,0 +1,13 @@
+[Unit]
+Description=Controlling volume for MAME with a button 
+After=mame-question.service 
+ConditionPathExists=/tmp/arcademode-confirm
+
+[Service]
+User=pi
+Group=pi
+ExecStart=/bin/bash /home/pi/scripts/mame-vol.sh
+    
+[Install]
+WantedBy=multi-user.target
+
