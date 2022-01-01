@@ -29,7 +29,7 @@ utilize X11.
 After studying the project for some time. I introduced some modifications to fit
 my needs.
 
-## No need to decide between arcademode and servicemode
+## 1. No need to decide between arcademode and servicemode
 
 The MAP works in two modes: `servicemode` and `arcademode`. Service mode enables
 arcade maintainers to perform activities like login into the system via SSH or a
@@ -44,10 +44,12 @@ My proposal is that the system always runs in `arcademode` but if you press a
 bottom and/or move the joystick at boot time, then the system goes into
 `servicemode`.
 
-### Detecting inputs at boot time
+### Detecting joysticks' inputs at boot time
 
-First, we need an script that detect if the joystick (the one in
-`/dev/input/js0`) has moved or a button has been pressed.
+First, we need [an
+script](https://github.com/alejandrorusso/mamearcade/blob/main/map/home/pi/scripts/mame-joystick-detect.sh)
+that detect if the joystick (the one in `/dev/input/js0`) has moved or a button
+has been pressed.
 
 ```bash
 #/bin/bash
@@ -68,3 +70,161 @@ if [ $INPUT -eq 0 ]; then
 	exit 0  # input not-detected!
 fi
 ```
+
+The script waits five seconds for inputs from either a joystick movement (`type
+1` event) or a pressed button (`type 2` event). If *no input* gets detected,
+then the script creates the empty file `/tmp/arcademode-confirm`. We will see
+the utility of this file later on.
+
+We also create a [systemd service to run this script at runtime](https://github.com/alejandrorusso/mamearcade/blob/main/map/etc/systemd/system/mame-question.service).
+
+```
+[Unit]
+Description=Reading input from joystick
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /home/pi/scripts/mame-joystick-detect.sh
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### Asking for joysticks' inputs before launching MAME
+
+Now, we need to modify the service responsible to launch MAME from this:
+
+```
+[Unit]
+Description=MAME Appliance Autostart service
+Conflicts=getty@tty1.service smbd.service nmbd.service rng-tools.service cron.service mame-artwork-mgmt.service
+Requires=local-fs.target
+After=local-fs.target
+
+[Service]
+User=pi
+Group=pi
+PAMName=login
+Type=simple
+ExecStart=/home/pi/scripts/autostart.sh
+Restart=on-abort
+RestartSec=5
+TTYPath=/dev/tty1
+StandardInput=tty
+
+[Install]
+WantedBy=multi-user.target
+Also=shutdown.service
+```
+
+[into
+this:](https://github.com/alejandrorusso/mamearcade/blob/main/map/etc/systemd/system/mame-autostart.service)
+
+```
+[Unit]
+Description=MAME Appliance Autostart service
+After=mame-question.service
+ConditionPathExists=/tmp/arcademode-confirm
+Conflicts=getty@tty1.service smbd.service nmbd.service rng-tools.service cron.service mame-artwork-mgmt.service
+
+[Service]
+User=pi
+Group=pi
+PAMName=login
+Type=simple
+EnvironmentFile=/etc/environment
+ExecStart=/home/pi/scripts/autostart.sh
+Restart=on-abort
+RestartSec=5
+TTYPath=/dev/tty1
+StandardInput=tty
+
+[Install]
+WantedBy=multi-user.target
+Also=shutdown.service
+```
+
+The modifications include
+
+- considering launching this service after asking for joysticks' inputs (see line
+  `After=mame-question.service`), and
+- launching MAME only under the existence of the file `/tmp/arcademode-confirm`
+(see line `ConditionPathExists=/tmp/arcademode-confirm`) -- recall that such
+file will exists only if **there were no joysticks' inputs**!.
+
+So, if there were no joysticks' inputs, then MAME will execute by calling
+`/home/pi/scripts/autostart.sh`. Otherwise, all the services declared as
+conflicting above will be successfully launched and will allow users to login
+into the system as in `servicemode`.
+
+## 2. Button to mute / unmute sound
+
+I plan to have my arcade in my office. So, having an arcade with noise all the
+time might disturb the working environment. In this light, I propose another
+modification which consists on adding a button to the Raspberry Pi (GPIO-based
+interface) to lower the volume, mute, and unmute the sound. In that manner, the
+arcade can show gameplay but without disturbing your work mates. People that
+want to play, however, can just unmute and enjoy the arcade from time to time.
+
+The goal is that if you keep pressing the button for some seconds (no more than
+5), you will hear that the volume change to a minimum. Then, if you keep
+pressing the button again for some seconds, the arcade will mute. Finally, if
+you keep pressing the button again for some time, you will see that the arcade
+unmute and has a high volume.
+
+The hardware that you need is simply a *push switch* -- I followed most of the
+idea from [this post](http://razzpisampler.oreilly.com/ch07.html). You need to
+connect two cables into the push switch: one into the GPIO 4 (look for pin 4 in
+your board) and another into ground (look for GND in your board). You can change
+the GPIO 4 for whatever GPIO that you have available on the board.
+
+We start by writing [an script to change the volume when detecting every five
+seconds that the button has been
+pressed](https://github.com/alejandrorusso/mamearcade/blob/main/map/home/pi/scripts/mame-vol.sh).
+
+```bash
+#!/bin/bash
+#file:/home/pi/scripts/mame-vol.sh
+
+HIGH="95%"
+LOW="70%"
+MUTE="0%"
+BREAK=5
+
+# Initialize GPIO pin
+echo 4 > /sys/class/gpio/unexport         # Deactivate GPIO 4
+echo 4 > /sys/class/gpio/export           # Activate GPIO 4
+#echo in > /sys/class/gpio/gpio4/direction # Input signal
+
+amixer cset numid=1 $HIGH
+
+while true; do
+	read SIGNAL < /sys/class/gpio/gpio4/value
+
+	# If the signals are different, the button was pressed
+	if [ $SIGNAL -eq 0 ]; then
+		echo "Volume button pressed"
+		CHECK_VOL=$(amixer | grep Mono: | awk -F"[\[\]]" '{print $2}')
+
+		echo "Current volume:" $CHECK_VOL
+
+		case $CHECK_VOL in
+		$HIGH)
+			echo Setting volume to low
+			amixer cset numid=1 $LOW  ;;
+		$LOW)
+			echo Setting volume to mute
+			amixer cset numid=1 '$MUTE'   ;;
+		$MUTE)
+			echo Setting volume to high
+			amixer cset numid=1 $HIGH  ;;
+		*)
+			amixer cset numid=1 $HIGH  ;;
+		esac
+	fi
+	sleep $BREAK
+done
+```
+
+We also write [a systemd service to launch this script only when being in
+`arcademode`](https://github.com/alejandrorusso/mamearcade/blob/main/map/etc/systemd/system/mame-volume.service).
