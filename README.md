@@ -38,8 +38,33 @@ all the resources to play games.
 
 One of the complications I found with MAP was to transition from `arcademode`
 into `servicemode` -- something that can demand to take out the SD card from the
-Raspberry Pi to delete some files. I modified a little bit your systemd files so
-that the system is always in `arcademode` but if you press a bottom and/or move
-the joystick at boot time, then the system goes into `servicemode`.
+Raspberry Pi to delete some files.
 
-### SSS
+My proposal is that the system always runs in `arcademode` but if you press a
+bottom and/or move the joystick at boot time, then the system goes into
+`servicemode`.
+
+### Detecting inputs at boot time
+
+First, we need an script that detect if the joystick (the one in
+`/dev/input/js0`) has moved or a button has been pressed.
+
+```bash
+#/bin/bash
+#file: /home/pi/scripts/mame-joystick-detect.sh
+
+# Testing joystick movement or buttons
+JOY0=/dev/input/js0
+
+# Waiting for some input
+timeout 5s jstest --event ${JOY0} > /tmp/joystick0
+
+# Checking if some input has occured
+
+INPUT=$(grep -e "type 1," -e "type 2," /tmp/joystick0 | wc -l)
+
+if [ $INPUT -eq 0 ]; then
+	touch /tmp/arcademode-confirm
+	exit 0  # input not-detected!
+fi
+```
