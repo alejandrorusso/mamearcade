@@ -16,15 +16,14 @@ MAME. Unfortunately, the MAME version that they provide is rather old, for
 example, from 2006! I like the idea of just running MAME in my Raspberry Pi.
 
 # The MAME Appliance Project (MAP)
-Luckily, I found that I was not alone! I found [the MAME appliance
+Luckily, I was not alone! I found [the MAME appliance
 project](https://gist-github-com.translate.goog/sonicprod/f5a7bb10fb9ed1cc5124766831e120c4?_x_tr_sl=fr&_x_tr_tl=en&_x_tr_hl=fr)
 that addresses this problem. It takes the Debian-based [Raspbian
 OS](https://www.raspbian.org/) and sets it up in a way that you can have your
 Raspberry Pi up to date with the latest version of MAME. The project is also set
 up to be minimalist in the amount of resources that it uses, e.g., it does not
 utilize X11. [The project provides a 12 GB SD card image with the latest MAME
-version up and
-running.](https://drive.google.com/file/d/1wWmISI-pM46O7oA_PoIv4cBAcOfE54RL/view?usp=sharing)
+version in it.](https://drive.google.com/file/d/1wWmISI-pM46O7oA_PoIv4cBAcOfE54RL/view?usp=sharing)
 
 # Extensions
 
@@ -35,10 +34,10 @@ fit my needs.
 
 The MAP works in two modes: `servicemode` and `arcademode`. Service mode enables
 arcade maintainers to perform activities like login into the system via SSH or a
-terminal, transfer files, etc. In contrast, arcade mode is dedicated to dedicate
+terminal, transfer files, etc. In contrast, arcade mode dedicates
 all the resources to play games.
 
-One of the complications I found with MAP was to transition from `arcademode`
+One of the complications I found with MAP was transitioning from `arcademode`
 into `servicemode` -- something that can demand to take out the SD card from the
 Raspberry Pi to delete some files.
 
@@ -50,7 +49,7 @@ bottom and/or move the joystick at boot time, then the system goes into
 
 First, we need [an
 script](https://github.com/alejandrorusso/mamearcade/blob/main/map/home/pi/scripts/mame-joystick-detect.sh)
-that detect if the joystick (the one in `/dev/input/js0`) has moved or a button
+that detects if the joystick (the one in `/dev/input/js0`) has moved or a button
 has been pressed.
 
 ```bash
@@ -94,7 +93,7 @@ WantedBy=multi-user.target
 
 ### Asking for joysticks' inputs before launching MAME
 
-Now, we need to modify the service responsible to launch MAME from this:
+Now, we need to modify the service responsible to launch MAME (file `mame-autostart.service`) from this:
 
 ```
 [Unit]
@@ -152,11 +151,11 @@ The modifications include
   `After=mame-question.service`), and
 - launching MAME only under the existence of the file `/tmp/arcademode-confirm`
 (see line `ConditionPathExists=/tmp/arcademode-confirm`) -- recall that such
-file will exist only if **there were no joysticks' inputs**!.
+file will exist only if **there were no joysticks' inputs**!
 
-So, if there were no joysticks' inputs, then MAME will execute by calling
+So, if there are no joysticks' inputs, then MAME will execute by calling
 `/home/pi/scripts/autostart.sh`. Otherwise, all the services declared as
-conflicting above will be successfully launched, which will allow users to login
+conflicting above are successfully launched, which will allow users to login
 into the system as in `servicemode`.
 
 ## 2. Button to mute / unmute sound
@@ -165,23 +164,22 @@ I plan to have my arcade in my office. So, having an arcade with noise all the
 time might disturb the working environment. In this light, I propose another
 modification which consists on adding a button to the Raspberry Pi (GPIO-based
 interface) to lower the volume, mute, and unmute the sound. In that manner, the
-arcade can show gameplay but without disturbing your work mates. People that
+arcade can show gameplays but without disturbing your work mates. People that
 want to play, however, can just unmute and enjoy the arcade from time to time.
 
 The goal is that if you keep pressing the button for some seconds (no more than
-5), you will hear that the volume change to a minimum. Then, if you keep
+5), you will hear that the volume is changed to a minimum. Then, if you keep
 pressing the button again for some seconds, the arcade will mute. Finally, if
-you keep pressing the button again, you will see that the arcade unmute and has
-a high volume.
+you keep pressing the button, you will see that the arcade unmutes and its volume is high. 
 
 The hardware that you need is simply a *push switch* -- I followed most of the
 idea from [this post](http://razzpisampler.oreilly.com/ch07.html). You need to
 connect two cables into the push switch: one into the GPIO 4 (look for pin 4 in
 your board) and another into ground (look for GND in your board). You can change
-the GPIO 4 for whatever GPIO available on the board.
+the GPIO 4 for whatever GPIO available you have on the board.
 
-We start by writing [an script to change the volume when detecting every five
-seconds that the button has been
+We start by writing [an script to change the volume when detecting (every five
+seconds) that the button has been
 pressed](https://github.com/alejandrorusso/mamearcade/blob/main/map/home/pi/scripts/mame-vol.sh).
 
 ```bash
@@ -228,7 +226,7 @@ while true; do
 done
 ```
 
-We also write [a systemd service to launch this script only when being in
+We also write [a systemd service to launch this script only in
 `arcademode`](https://github.com/alejandrorusso/mamearcade/blob/main/map/etc/systemd/system/mame-volume.service).
 
 ```
@@ -252,8 +250,8 @@ Observe that the script is run only if no joysticks' inputs are detected (see
 
 ## 3. Showing IP in login screen
 
-Sometimes it is useful to know the IP of your MAP when entering into
-`servicemode`. So, it is enough to modify [the file `/etc/issue`](https://github.com/alejandrorusso/mamearcade/blob/main/map/etc/issue):
+It is useful to know the IP of your MAP when entering into
+`servicemode`. So, I propose to modify [the file `/etc/issue`](https://github.com/alejandrorusso/mamearcade/blob/main/map/etc/issue):
 
 ```
 Raspbian GNU/Linux 10 \n \l
@@ -271,7 +269,7 @@ explore further with MAP.
 - So far, the joysticks' input come from `/dev/input/js0`, but why not
   generalize this to consider any joystick in the system?
 - It is not clear when exactly at boot time the script is waiting for the
-  joysticks input. At this point, when you see the MAME splash screen, you
+  joystick's input. At this point, when you see the MAME splash screen, you
   should start moving the joystick or pressing a button. While this works, it
   would be nice to play some sound to indicate exactly when the input is
   expected.
@@ -281,5 +279,5 @@ explore further with MAP.
   has been changed, and you need to do the patching manually. So, `mame-updater.sh`
   needs to be changed and a new patch file needs to be created for MAME 0238.
   What about 0239?
-- How do we make that modifications of scripts automatically are deployed? I am
-  planning making many MAPs :)
+- How do we automatically deploy any further modifications of scripts? I am
+  planning building many MAPs :)
