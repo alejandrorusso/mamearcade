@@ -38,11 +38,8 @@ all the resources to play games.
 
 One of the complications I found with MAP was to transition from `arcademode`
 into `servicemode` -- something that can demand to take out the SD card from the
-Raspberry Pi to delete some files.
+Raspberry Pi to delete some files. I modified a little bit your systemd files so
+that the system is always in `arcademode` but if you press a bottom and/or move
+the joystick at boot time, then the system goes into `servicemode`.
 
-
-
-you described how to do in a README file. I
-modified a little bit your systemd files so that the system is always in arcade
-mode but if you press a bottom and/or move the joystick at boot time, then the
-system goes into servicemode.
+### SSS
