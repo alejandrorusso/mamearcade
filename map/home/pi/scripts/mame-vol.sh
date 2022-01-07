@@ -1,40 +1,47 @@
 #!/bin/bash
+#file:/home/pi/scripts/mame-vol.sh
 
-HIGH="95%"
-LOW="70%"
-MUTE="0%"
-BREAK=5 
+HIGH='95%'
+MED='85%'
+LOW='72%'
+MUTE='0%'
 
-# Initialize GPIO pin 
-echo 4 > /sys/class/gpio/unexport         # Deactivate GPIO 4  
-echo 4 > /sys/class/gpio/export           # Activate GPIO 4  
-#echo in > /sys/class/gpio/gpio4/direction # Input signal
+GPIOPIN=4   # We use GPIO 4
 
-amixer cset numid=1 $HIGH  
+# Initialize GPIO pin
+echo $GPIOPIN > /sys/class/gpio/unexport  # Deactivate GPIO pin
+echo $GPIOPIN > /sys/class/gpio/export    # Activate GPIO pin
+sleep 0.1                                 # A small delay is required so that the system has time
+                                          # to properly create and set the file's permission
+echo in > /sys/class/gpio/gpio${GPIOPIN}/direction # Input signal
+echo both > /sys/class/gpio/gpio${GPIOPIN}/edge    # We use the interrupt controller to avoid a CPU spin loop
 
-while true; do 
-	read SIGNAL < /sys/class/gpio/gpio4/value 
-	
-	# If the signals are different, the button was pressed
-	if [ $SIGNAL -eq 0 ]; then   
-		echo "Volume button pressed"
-		CHECK_VOL=$(amixer | grep Mono: | awk -F"[\[\]]" '{print $2}')
+amixer -q cset numid=1 $MED
 
-		echo "Current volume:" $CHECK_VOL
+while true; do
+  inotifywait -q -e modify /sys/class/gpio/gpio${GPIOPIN}/value > /dev/null      # CPU efficient wait
+  read SIGNAL < /sys/class/gpio/gpio${GPIOPIN}/value     # 0=Pressed, 1=Released/Not pressed
 
-		case $CHECK_VOL in 
-		$HIGH)
-			echo Setting volume to low 
-			amixer cset numid=1 $LOW  ;;
-		$LOW)
-			echo Setting volume to mute
-			amixer cset numid=1 '$MUTE'   ;;
-		$MUTE)
-			echo Setting volume to high 
-			amixer cset numid=1 $HIGH  ;;
-		*)
-			amixer cset numid=1 $HIGH  ;;
-		esac
-	fi
-	sleep $BREAK
-done	
+  if [ $SIGNAL -eq 0 ]; then    # 0=Pressed, 1=Released/Not pressed
+    # Volume button pressed
+    CHECK_VOL=$(amixer | awk -F'[\[\]]' '/Mono: Playback/ {print $2}')
+
+    case $CHECK_VOL in
+      $HIGH)
+        # Setting volume to medium
+        amixer -q cset numid=1 $MED ;;
+      $MED)
+        # Setting volume to low
+        amixer -q cset numid=1 $LOW ;;
+      $LOW)
+        # Setting volume to mute
+        amixer -q cset numid=1 "$MUTE" ;;
+      $MUTE)
+        # Setting volume to high
+        amixer -q cset numid=1 $HIGH ;;
+      *)
+        # Setting volume to medium (default)
+        amixer -q cset numid=1 $MED ;;
+    esac
+  fi
+done
