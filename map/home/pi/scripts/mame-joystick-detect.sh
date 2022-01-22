@@ -1,18 +1,16 @@
-#/bin/sh
+#! /bin/bash
 
-# Testing joystick
-# Todo: generalize and detect the joysticks
-
+BOOTSOUND=/home/pi/scripts/coin.wav
+TIMEOUT=5
 JOY0=/dev/input/js0
+JOY1=/dev/input/js1
 
-# Waiting for some input
-timeout 5s jstest --event ${JOY0} > /tmp/joystick0
+aplay -q $BOOTSOUND  &      # Boot sound
 
-# Checking the input
+inotifywait -q -t $TIMEOUT -e modify $JOY0 $JOY1 > /dev/null
 
-INPUT=$(grep -e "type 1," -e "type 2," /tmp/joystick0 | wc -l) 
-
-if [ $INPUT -eq 0 ]; then 
-	touch /tmp/arcademode-confirm
-	exit 0  # input not-detected!
+if [ $?  -eq 0 ] ;  then  # Joystick activated
+  touch /tmp/arcademode-confirm                  # Arcade Mode
+else
+  aplay -q /home/pi/scripts/service-mode.wav     # Service Mode
 fi
