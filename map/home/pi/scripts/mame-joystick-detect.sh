@@ -10,7 +10,7 @@ aplay -q $BOOTSOUND  &      # Boot sound
 inotifywait -q -t $TIMEOUT -e modify $JOY0 $JOY1 > /dev/null
 
 if [ $?  -eq 0 ] ;  then  # Joystick activated
-  touch /tmp/arcademode-confirm                  # Arcade Mode
-else
   aplay -q /home/pi/scripts/service-mode.wav     # Service Mode
+else
+  touch /tmp/arcademode-confirm                  # Arcade Mode
 fi
